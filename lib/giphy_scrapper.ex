@@ -4,21 +4,18 @@ defmodule GiphyScrapper do
   @api_url "https://api.giphy.com/v1/gifs/search?"
 
   def search(query) do
-    setup_giphy_search_api_request(query)
-    |> get_response_data()
+    make_request(query)
     |> deserialize_from_json_to_data()
+    |> retrieve_giphy_data_from()
   end
 
-  defp get_response_data({:ok, response}) do
+  defp deserialize_from_json_to_data({:ok, response}) do
     response.body
+    |> Jason.decode!()
   end
 
-  defp deserialize_from_json_to_data(json) do
-    search_result =
-      json
-      |> Jason.decode!()
-
-    search_result["data"]
+  defp retrieve_giphy_data_from(json) do
+    json["data"]
     |> Enum.map(fn item ->
       %GiphyScrapper{
         id: item["id"],
@@ -29,7 +26,7 @@ defmodule GiphyScrapper do
     end)
   end
 
-  defp setup_giphy_search_api_request(query) do
+  defp make_request(query) do
     Finch.build(:get, build_encoded_url(query))
     |> Finch.request(HttpClient)
   end
